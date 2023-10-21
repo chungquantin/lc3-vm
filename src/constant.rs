@@ -14,3 +14,8 @@ pub(crate) const CPU_INSTRUCTION_BIT_WIDTH: usize = 16;
 pub(crate) const CPU_OPCODE_BIT_SIZE: usize = 4;
 
 pub(crate) const PROGRAM_COUNTER_START: i32 = 0x3000;
+
+pub(crate) const POSITIVE_BIT: u16 = 0;
+pub(crate) const NEGATIVE_BIT: u16 = 1;
+pub(crate) const IMMEDIATE_MODE: u16 = 1;
+pub(crate) const REGISTER_MODE: u16 = 0;
