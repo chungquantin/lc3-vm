@@ -1,5 +1,4 @@
 use crate::constant;
-use crate::constant::{IMMEDIATE_MODE, NEGATIVE_BIT, REGISTER_MODE};
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 #[allow(non_camel_case_types)]
@@ -29,23 +28,22 @@ impl LC3Instruction {
         let opcode: u16 = instruction_bytes >> right_shift_val;
         /// Opcode is a first 4 bits
         Some(match opcode {
-            1101 => LC3Instruction::RES,
-            /// Structure: 0001 | DR (3 bits) | SR1 (3 bits) | mode (1 bit) | rest (SR 2 (2 bits left most) and imm5 (4 bits))
-            0001 => LC3Instruction::ADD,
-            0101 => LC3Instruction::AND,
-            0000 => LC3Instruction::BR,
-            1100 => LC3Instruction::JMP,
-            0100 => LC3Instruction::JSR,
-            0010 => LC3Instruction::LD,
-            1010 => LC3Instruction::LDI,
-            0110 => LC3Instruction::LDR,
-            1110 => LC3Instruction::LEA,
-            1001 => LC3Instruction::NOT,
-            1000 => LC3Instruction::RTI,
-            0011 => LC3Instruction::ST,
-            1011 => LC3Instruction::STI,
-            0111 => LC3Instruction::STR,
-            1111 => LC3Instruction::TRAP,
+            0b1101 => LC3Instruction::RES,
+            0b0001 => LC3Instruction::ADD,
+            0b0101 => LC3Instruction::AND,
+            0b0000 => LC3Instruction::BR,
+            0b1100 => LC3Instruction::JMP,
+            0b0100 => LC3Instruction::JSR,
+            0b0010 => LC3Instruction::LD,
+            0b1010 => LC3Instruction::LDI,
+            0b0110 => LC3Instruction::LDR,
+            0b1110 => LC3Instruction::LEA,
+            0b1001 => LC3Instruction::NOT,
+            0b1000 => LC3Instruction::RTI,
+            0b0011 => LC3Instruction::ST,
+            0b1011 => LC3Instruction::STI,
+            0b0111 => LC3Instruction::STR,
+            0b1111 => LC3Instruction::TRAP,
             _ => panic!("No opcode found {}", opcode),
         })
     }
