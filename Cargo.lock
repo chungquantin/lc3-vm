@@ -78,7 +78,6 @@ name = "lc3-vm"
 version = "0.1.0"
 dependencies = [
  "byteorder",
- "libc",
  "structopt",
 ]
 

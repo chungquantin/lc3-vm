@@ -29,13 +29,13 @@ struct Cli {
 }
 
 /// Read image from a provided input path
-fn load_image(cpu: &LC3Cpu) {
+fn load_image(cpu: &mut LC3Cpu) {
     let cli = Cli::from_args();
 
     let f = File::open(cli.path).expect("couldn't open file");
     let mut f = BufReader::new(f);
 
-    // Note how we're using `read_u16` _and_ BigEndian to read the binary file.
+    // Note how we're using `read_u16` _and_ BigEndian to read the roms file.
     // Most modern computers are little-endian (LE) but LC3 programs are big-endian (BE)
     let base_address = f.read_u16::<BigEndian>().expect("error");
 
@@ -66,7 +66,7 @@ fn load_image(cpu: &LC3Cpu) {
 /// e.g. x = 1100100 with the bit_count = 6 => 1 is the right most index in the bit set.
 pub fn sign_extend(mut x: u16, bit_count: i32) -> u16 {
     // Get the rightmost bit index in the bit set and check if the value of the bit is 1 (negative) or 0 (positive)
-    // - 0xFFFF in hexadecimal = 1111 1111 1111 1111 in binary
+    // - 0xFFFF in hexadecimal = 1111 1111 1111 1111 in roms
     // - If the sign is negative (0) => do OR operation to bit mask with `bit_count` most significant bits set to 1
     if ((x >> (bit_count - 1)) & 1) == NEGATIVE_BIT {
         x |= 0xFFFF << bit_count;
@@ -83,13 +83,14 @@ fn main() {
     cpu.registers[PC as usize] = constant::PROGRAM_COUNTER_START;
 
     // User console
-    load_image(&cpu);
+    load_image(&mut cpu);
 
     loop {
         cpu.registers[PC as usize] += 1;
         let instruction: u16 = cpu.mem_read(cpu.registers[PC as usize]);
         match LC3Instruction::from_bytes(instruction) {
             Some(opcode) => {
+                println!("{:?}", opcode);
                 match opcode {
                     LC3Instruction::ADD => {
                         let dr = (instruction >> 9) & 0x7;
@@ -102,8 +103,10 @@ fn main() {
                             }
                             REGISTER_MODE => {
                                 let sr2: u16 = instruction & 0x7;
-                                cpu.registers[dr as usize] =
-                                    cpu.registers[sr1 as usize] + cpu.registers[sr2 as usize];
+                                let val: u32 = (cpu.registers[sr1 as usize]
+                                    + cpu.registers[sr2 as usize])
+                                    as u32;
+                                cpu.registers[dr as usize] = val as u16;
                             }
                             _ => panic!("Invalid mode"),
                         }
@@ -144,8 +147,8 @@ fn main() {
                     LC3Instruction::LD => {
                         let dr = (instruction >> 9) & 0x7;
                         let pc_offset_9 = sign_extend(instruction & 0x1FF, 9);
-                        cpu.registers[dr as usize] =
-                            cpu.mem_read(cpu.registers[PC as usize] + pc_offset_9);
+                        let val: u32 = (cpu.registers[PC as usize] + pc_offset_9) as u32;
+                        cpu.registers[dr as usize] = cpu.mem_read(val as u16);
                         cpu.update_flags(dr);
                     } /* load */
                     LC3Instruction::ST => {
@@ -162,13 +165,13 @@ fn main() {
                         match mode {
                             IMMEDIATE_MODE => {
                                 /* JSR */
-                                let pc_offset_11 = sign_extend(instruction & 0x7FF, 11);
-                                cpu.registers[PC as usize] += pc_offset_11;
+                                let pc_offset_11 = (sign_extend(instruction & 0x7FF, 11)) as u32;
+                                cpu.registers[PC as usize] += pc_offset_11 as u16;
                             }
                             REGISTER_MODE => {
                                 /* JSRR */
                                 let base_r = (instruction >> 6) & 0x7;
-                                cpu.registers[PC as usize] += cpu.registers[base_r as usize];
+                                cpu.registers[PC as usize] = cpu.registers[base_r as usize];
                             }
                             _ => panic!("Invalid mode"),
                         }
@@ -177,18 +180,17 @@ fn main() {
                         let dr = (instruction >> 9) & 0x7;
                         let base_r = (instruction >> 6) & 0x7;
                         let offset_6 = sign_extend(instruction & 0x3F, 6);
-                        cpu.registers[dr as usize] =
-                            cpu.mem_read(cpu.registers[base_r as usize] + offset_6);
+                        let val: u32 =
+                            cpu.mem_read(cpu.registers[base_r as usize] + offset_6) as u32;
+                        cpu.registers[dr as usize] = val as u16;
                         cpu.update_flags(dr);
                     } /* load register */
                     LC3Instruction::STR => {
                         let sr = (instruction >> 9) & 0x7;
                         let base_r = (instruction >> 6) & 0x7;
                         let offset_6 = sign_extend(instruction & 0x3F, 6);
-                        cpu.mem_write(
-                            cpu.registers[base_r as usize] + offset_6,
-                            cpu.registers[sr as usize],
-                        );
+                        let val = (cpu.registers[base_r as usize] + offset_6) as u32;
+                        cpu.mem_write(val as u16, cpu.registers[sr as usize]);
                     } /* store register */
                     LC3Instruction::NOT => {
                         let dr = (instruction >> 9) & 0x7;
@@ -199,17 +201,17 @@ fn main() {
                     LC3Instruction::LDI => {
                         let dr = (instruction >> 9) & 0x7;
                         let pc_offset_9 = sign_extend(instruction & 0x1FF, 9);
-                        cpu.registers[dr as usize] =
-                            cpu.mem_read(cpu.mem_read(cpu.registers[PC as usize] + pc_offset_9));
+                        let updated_pc_data =
+                            cpu.mem_read(cpu.registers[PC as usize] + pc_offset_9);
+                        cpu.registers[dr as usize] = cpu.mem_read(updated_pc_data);
                         cpu.update_flags(dr);
                     } /* load indirect */
                     LC3Instruction::STI => {
                         let sr = (instruction >> 9) & 0x7;
                         let pc_offset_9 = sign_extend(instruction & 0x1FF, 9);
-                        cpu.mem_write(
-                            cpu.mem_read(cpu.registers[PC as usize] + pc_offset_9),
-                            cpu.registers[sr as usize],
-                        );
+                        let updated_pc_data =
+                            cpu.mem_read(cpu.registers[PC as usize] + pc_offset_9);
+                        cpu.mem_write(updated_pc_data, cpu.registers[sr as usize]);
                     } /* store indirect */
                     LC3Instruction::LEA => {
                         let dr = (instruction >> 9) & 0x7;

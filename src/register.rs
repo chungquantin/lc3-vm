@@ -5,18 +5,25 @@ Most of them are general purpose, but a few have designated roles.
 #[allow(non_camel_case_types)]
 pub(crate) enum LC3CPURegister {
     /** General purpose register (R0 - R7) **/
-    R0 = 0x1,
-    R1 = 0x2,
-    R2 = 0x3,
-    R3 = 0x4,
-    R4 = 0x5,
-    R5 = 0x6,
-    R6 = 0x7,
-    R7 = 0x8,
+    R0 = 0x0,
+    R1 = 0x1,
+    R2 = 0x2,
+    R3 = 0x3,
+    R4 = 0x4,
+    R5 = 0x5,
+    R6 = 0x6,
+    R7 = 0x7,
     /** Program counter register **/
-    PC = 0x9,
+    PC = 0x8,
     /** Conditional register **/
-    COND = 0xA,
+    COND = 0x9,
+}
+
+/// Memory Mapped Register: Some special registers are not accessible from the normal register table.
+/// Instead, a special address is reserved for them in memory.
+pub(crate) enum MemoryMappedRegister {
+    KBSR = 0xFE00, /* keyboard status */
+    KBDR = 0xFE02, /* keyboard data */
 }
 
 /** The LC-3 uses only 3 condition flags which indicate the sign of the previous calculation.

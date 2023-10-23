@@ -1,6 +1,7 @@
 use crate::constant;
 use crate::constant::NEGATIVE_BIT;
-use crate::register::{LC3CPURegister::*, LC3ConditionalFlags::*};
+use crate::register::{LC3CPURegister::*, LC3ConditionalFlags::*, MemoryMappedRegister};
+use std::io::Read;
 
 #[derive(Debug)]
 #[allow(non_camel_case_types)]
@@ -31,9 +32,25 @@ impl LC3Cpu {
         }
     }
 
-    pub fn mem_read(self: &Self, sp: u16) -> u16 {
-        return 0;
+    fn handle_keyboard(&mut self) {
+        let mut buffer = [0; 1];
+        std::io::stdin().read_exact(&mut buffer).unwrap();
+        if buffer[0] != 0 {
+            self.mem_write(MemoryMappedRegister::KBSR as u16, 1 << 15);
+            self.mem_write(MemoryMappedRegister::KBDR as u16, buffer[0] as u16);
+        } else {
+            self.mem_write(MemoryMappedRegister::KBSR as u16, 0)
+        }
     }
 
-    pub fn mem_write(self: &Self, sp: u16, data: u16) {}
+    pub fn mem_read(self: &mut Self, address: u16) -> u16 {
+        if address == MemoryMappedRegister::KBSR as u16 {
+            self.handle_keyboard();
+        }
+        self.memory[address as usize]
+    }
+
+    pub fn mem_write(self: &mut Self, address: u16, data: u16) {
+        self.memory[address as usize] = data;
+    }
 }
