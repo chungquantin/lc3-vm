@@ -26,7 +26,7 @@ impl LC3Instruction {
     pub fn from_bytes(instruction_bytes: u16) -> Option<Self> {
         let right_shift_val = constant::CPU_INSTRUCTION_BIT_WIDTH - constant::CPU_OPCODE_BIT_SIZE;
         let opcode: u16 = instruction_bytes >> right_shift_val;
-        /// Opcode is a first 4 bits
+        // Opcode is a first 4 bits
         Some(match opcode {
             0b1101 => LC3Instruction::RES,
             0b0001 => LC3Instruction::ADD,
