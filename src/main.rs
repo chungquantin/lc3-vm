@@ -36,9 +36,11 @@ fn load_image(cpu: &LC3Cpu) {
     let mut f = BufReader::new(f);
 
     // Note how we're using `read_u16` _and_ BigEndian to read the binary file.
+    // Most modern computers are little-endian (LE) but LC3 programs are big-endian (BE)
     let base_address = f.read_u16::<BigEndian>().expect("error");
 
     // Here we're loading the program in memory
+    // First 16 bits tell the LC3 which address to load the program
     let mut address = base_address;
     loop {
         match f.read_u16::<BigEndian>() {
